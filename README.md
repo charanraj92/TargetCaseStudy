@@ -5,13 +5,13 @@
 MyRetail is an implementation to retrieve/aggregate product details using the productId. Application is built using Spring boot and MongoDB technologies.
 
 ## Database
-start the instance of MongoDb on your system using 
+Start the instance of MongoDB on your system using 
 
 ```
 mongod --config /usr/local/etc/mongod.conf
 ```
 
-Once you have the running instance of Mongo, save the following test date file and run the following command to import test date into the collection.
+Once you have the running instance of Mongo, save the following test data file and run the following command to import test data into the collection.
 
 ```
 mongoimport --collection products --drop --jsonArray --file sample-data.json
@@ -19,6 +19,7 @@ mongoimport --collection products --drop --jsonArray --file sample-data.json
 
 ## Documentation
 `http://localhost:8080/swagger-ui.html# `
+
 App implements Swagger for documentation.
 
 ## Security
