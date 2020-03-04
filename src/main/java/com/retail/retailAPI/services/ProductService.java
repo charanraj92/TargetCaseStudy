@@ -16,6 +16,7 @@ import org.springframework.web.client.RestClientException;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.util.UriComponentsBuilder;
 
+import java.io.IOException;
 import java.net.URI;
 import java.util.Optional;
 
@@ -67,6 +68,8 @@ public class ProductService {
      * @throws Exception if unable to find the product in the database
      */
     private String getProductName(int id) {
+        logger.info("Getting product name from redsky API...");
+
         try {
             /* Get the URI for the given id */
             URI uri = UriComponentsBuilder.fromHttpUrl(appConfig.getRestURL())
@@ -92,6 +95,8 @@ public class ProductService {
      * @throws Exception in case of any issues while retrieving item from repository
      */
     private Optional<Product> retrieveProduct(int id) {
+        logger.info("Retrieving information for product id {}...", id);
+
         try {
             return priceRepository.findById(id);
         } catch (IllegalArgumentException ex) {
@@ -117,8 +122,8 @@ public class ProductService {
             if(productName.isMissingNode())
                 throw new ProductNotFoundException("Unable to find product in redsky API");
 
-            return productName.toString();
-        } catch (Exception ex) {
+            return productName.asText();
+        } catch (IOException ex) {
             logger.error("Unable to parse the Json String");
             throw new ServerException("Unable to Parse the response the external API");
         }
@@ -148,7 +153,13 @@ public class ProductService {
 
         /* Update and save */
         productInDatabase.get().setPrice(product.getPrice());
-        priceRepository.save(productInDatabase.get());
+
+        try {
+            logger.info("Saving product with id {} ...", id);
+            priceRepository.save(productInDatabase.get());
+        } catch (IllegalArgumentException ex) {
+            throw new ServerException("Unable to save product price for id - {}", id);
+        }
 
         return productInDatabase;
     }

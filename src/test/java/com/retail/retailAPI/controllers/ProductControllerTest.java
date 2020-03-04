@@ -2,6 +2,7 @@ package com.retail.retailAPI.controllers;
 
 import com.retail.retailAPI.exceptions.ProductNotFoundException;
 import com.retail.retailAPI.exceptions.ServerException;
+import com.retail.retailAPI.models.Price;
 import com.retail.retailAPI.models.Product;
 import com.retail.retailAPI.services.ProductService;
 import org.junit.Before;
@@ -48,8 +49,8 @@ public class ProductControllerTest {
 
     @Test
     public void when_ProductReturned_Expect_RetrieveSuccess() throws Exception {
-        Product product = mock(Product.class);
-        when(productService.getProduct(anyInt())).thenReturn(Optional.ofNullable(product));
+        Product product = new Product(1, "test", new Price(1, "USD"));
+        when(productService.getProduct(anyInt())).thenReturn(Optional.of(product));
 
         RequestBuilder builder = MockMvcRequestBuilders.get("/api/v1/products/10")
                 .accept(MediaType.APPLICATION_JSON);
@@ -77,23 +78,54 @@ public class ProductControllerTest {
         mvc.perform(builder).andExpect(status().is5xxServerError());
     }
 
-    @WithMockUser(value = "admin", password = "password", roles = {"ADMIN"})
+    @WithMockUser(value = "admin", password = "{noop}password", roles = {"ADMIN"})
     @Test
     public void when_UpdateSuccess_Expect_UpdateSuccess() throws Exception {
+        Product product = new Product(1, "test", new Price(1, "USD"));
         when(productService.updateProduct(anyInt(), any(Product.class)))
-                .thenReturn(Optional.of(mock(Product.class)));
+                .thenReturn(Optional.of(product));
 
         RequestBuilder builder = MockMvcRequestBuilders.put("/api/v1/products/10")
-                .content(anyString())
+                .content("{\n" +
+                        "  \"id\": 10,\n" +
+                        "  \"name\": \"\\\"test\\\"\",\n" +
+                        "  \"price\": {\n" +
+                        "    \"value\": 34,\n" +
+                        "    \"currencyCode\": \"USD\"\n" +
+                        "  }\n" +
+                        "}")
+                .contentType(MediaType.APPLICATION_JSON)
                 .accept(MediaType.APPLICATION_JSON);
 
         mvc.perform(builder).andExpect(status().is2xxSuccessful());
     }
 
+    @WithMockUser(value = "admin", password = "{noop}password", roles = {"ADMIN"})
     @Test
     public void when_ProductNotFound_Expect_UpdateFailure() throws Exception {
         when(productService.updateProduct(anyInt(), any(Product.class)))
                 .thenThrow(mock(ProductNotFoundException.class));
+
+        RequestBuilder builder = MockMvcRequestBuilders.put("/api/v1/products/10")
+                .content("{\n" +
+                "  \"id\": 10,\n" +
+                "  \"name\": \"test\",\n" +
+                "  \"price\": {\n" +
+                "    \"value\": 34,\n" +
+                "    \"currencyCode\": \"USD\"\n" +
+                "  }\n" +
+                "}")
+                .contentType(MediaType.APPLICATION_JSON)
+                .accept(MediaType.APPLICATION_JSON);
+
+        mvc.perform(builder).andExpect(status().is4xxClientError());
+    }
+
+    @WithMockUser(value = "admin", password = "{noop}password", roles = {"ADMIN"})
+    @Test
+    public void when_InternalServerError_Expect_UpdateFailure() throws Exception {
+        when(productService.updateProduct(anyInt(), any(Product.class)))
+                .thenThrow(mock(ServerException.class));
 
         RequestBuilder builder = MockMvcRequestBuilders.put("/api/v1/products/10").content("{\n" +
                 "  \"id\": 10,\n" +
@@ -102,24 +134,9 @@ public class ProductControllerTest {
                 "    \"value\": 34,\n" +
                 "    \"currencyCode\": \"USD\"\n" +
                 "  }\n" +
-                "}");
-
-        mvc.perform(builder).andExpect(status().is4xxClientError());
-    }
-
-    @Test
-    public void when_InternalServerError_Expect_UpdateFailure() throws Exception {
-        when(productService.updateProduct(anyInt(), any(Product.class)))
-                .thenThrow(mock(ServerException.class));
-
-        RequestBuilder builder = MockMvcRequestBuilders.put("/api/v1/products/10").content("{\n" +
-                "  \"id\": 10,\n" +
-                "  \"name\": \"\\\"test\\\"\",\n" +
-                "  \"price\": {\n" +
-                "    \"value\": 34,\n" +
-                "    \"currencyCode\": \"USD\"\n" +
-                "  }\n" +
-                "}");
+                "}")
+                .contentType(MediaType.APPLICATION_JSON)
+                .accept(MediaType.APPLICATION_JSON);
 
         mvc.perform(builder).andExpect(status().is5xxServerError());
     }
